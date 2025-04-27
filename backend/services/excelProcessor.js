@@ -83,33 +83,32 @@ export const processExcelFile = async (fileBuffer, aiAgent, apiKey) => {
     }
 
     // Step 2: Process each question via AI
-    let successfulResponseCount = 0;
+    let successfulRowCount = 0;
     for (const rowData of rowsData) {
       const row = worksheet.getRow(rowData.rowNumber);
-
+      let successfulRowQuestionCount = 0;
       for (const q of rowData.questions) {
         const prompt = buildPrompt(q);
         const aiResponse = await callAIModel(aiAgent, prompt, apiKey);
 
         // Assuming AI response format: Feedback\nScore
         const [feedback,cheatingChance, score] = parseAIResponse(aiResponse);
-
-        if (feedback) {
-          row.getCell(columnLetterToNumber(q.feedbackCol)).value = feedback;
-        }
-        if (cheatingChance) {
-          row.getCell(columnLetterToNumber(q.cheatingProbCol)).value = score;
-        }
-        if (score) {
-          row.getCell(columnLetterToNumber(q.scoreCol)).value = score;
-        }
+        row.getCell(columnLetterToNumber(q.feedbackCol)).value = feedback || 'NO FEEDBACK FOUND';
+        row.getCell(columnLetterToNumber(q.cheatingProbCol)).value = score || 'NO CHEATING PROB FOUND';
+        row.getCell(columnLetterToNumber(q.scoreCol)).value = score || 'NO SCORE FOUND';
+        successfulRowQuestionCount++;
       }
-      row.commit();
+      if (successfulRowQuestionCount) {
+        row.commit();
+        successfulRowCount++;
+      }
     }
-
-    const outputBuffer = await workbook.xlsx.writeBuffer();
-    return outputBuffer;
-
+    if (successfulRowCount) {
+      const outputBuffer = await workbook.xlsx.writeBuffer();
+      return outputBuffer;
+    } else {
+     throw new Error({message: 'No questions processed!'});
+    }
   } catch (error) {
     console.error('Error in excelProcessor:', error.message);
     throw error;
