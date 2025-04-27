@@ -8,6 +8,9 @@ export default function FileUploadForm() {
   const [aiAgent, setAiAgent] = useState('deepseek');
   const [isUploading, setIsUploading] = useState(false);
 
+  const baseUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3500';
+  // console.log('baseUrl: ', baseUrl);
+
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
   };
@@ -28,7 +31,7 @@ export default function FileUploadForm() {
     try {
       setIsUploading(true);
       // const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/process-excel`, formData, {
-      const response = await axios.post(`http://localhost:3500/api/process-excel`, formData, {
+      const response = await axios.post(`${baseUrl}/api/process-excel`, formData, {
         responseType: 'blob',
       });
 

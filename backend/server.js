@@ -13,7 +13,7 @@ app.use(cors());
 app.use(fileUpload());
 app.use(express.json());
 
-app.get('/', (req, res) => {
+app.get('/api/ping', (req, res) => {
     res.send('AI Excel Processor Backend Running ✅');
 });
 

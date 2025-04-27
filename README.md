@@ -62,7 +62,7 @@ npm start
 Server will run on:
 
 ```
-http://localhost:3000
+http://localhost:3500
 ```
 
 ---
@@ -77,21 +77,14 @@ http://localhost:3000
 cd frontend/react-app
 ```
 
-3. If you don't have React installed yet, create the react app:
+3. Install dependencies:
 
 ```bash
-npx create-react-app .
+npm install
 ```
 
-4. Install Axios for API requests:
 
-```bash
-npm install axios
-```
-
-5. Replace the `src/App.jsx` file with the provided one (already included).
-
-6. Start the React frontend:
+4Start the React frontend:
 
 ```bash
 npm start
@@ -100,7 +93,7 @@ npm start
 Frontend will run on:
 
 ```
-http://localhost:3001
+http://localhost:3000
 ```
 
 (If it asks for port change, say YES.)
