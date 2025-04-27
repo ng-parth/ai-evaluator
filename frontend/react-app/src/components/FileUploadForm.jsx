@@ -43,7 +43,7 @@ export default function FileUploadForm() {
       showToast('File processed successfully! 🎉', 'success');
     } catch (error) {
       console.error(error);
-      showToast('Error processing file. Please check the API key or file format.', 'error');
+      showToast('Error processing file. Please check the API key or logs.', 'error');
     } finally {
       setIsUploading(false);
     }

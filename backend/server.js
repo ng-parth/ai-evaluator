@@ -32,8 +32,9 @@ app.post('/api/process-excel', async (req, res) => {
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.send(processedBuffer);
     } catch (error) {
-        console.error('Error during processing:', error?.response);
-        res.status(500).send('Error processing file.');
+        const errMessage = error?.message || 'Error processing file.';
+        console.error('Error during processing:', error?.response || errMessage);
+        res.status(500).send(errMessage);
     }
 });
 
