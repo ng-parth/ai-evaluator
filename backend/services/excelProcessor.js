@@ -9,7 +9,7 @@ const questionConfig = [
     rubricCol: 'Q',
     feedbackCol: 'M',
     cheatingProbCol: 'N',
-    scoreCol: 'R',
+    scoreCol: 'O',
   },
   {
     questionCol: 'T',
@@ -96,7 +96,7 @@ export const processExcelFile = async (fileBuffer, aiAgent, apiKey) => {
           // Assuming AI response format: Feedback\nScore
           const [feedback,cheatingChance, score] = parseAIResponse(aiResponse);
           row.getCell(columnLetterToNumber(q.feedbackCol)).value = feedback || 'NO FEEDBACK FOUND';
-          row.getCell(columnLetterToNumber(q.cheatingProbCol)).value = score || 'NO CHEATING PROB FOUND';
+          row.getCell(columnLetterToNumber(q.cheatingProbCol)).value = cheatingChance || 'NO CHEATING PROB FOUND';
           row.getCell(columnLetterToNumber(q.scoreCol)).value = score || 'NO SCORE FOUND';
           successfulRowQuestionCount++;
         } catch (e) {
@@ -123,9 +123,9 @@ export const processExcelFile = async (fileBuffer, aiAgent, apiKey) => {
 const buildPrompt = ({questionText, answerText, modelAnswer, rubric} ) => {
   return `Question: ${questionText}
             Candidate's Response: ${answerText}
-            Model Answer: ${modelAnswer}
+            Ideal Answer: ${modelAnswer}
             Rubric: ${rubric}
-          Evaluate the model answer based on the rubric. Provide concise feedback in 40-50 words, give cheating probaility and give a final score out of 10.
+          Evaluate Candidate's response based on the rubric and the Ideal Answer. Provide concise feedback on candidate's response in 40-50 words, give cheating probaility and give a final score out of 10.
 Respond in the format:
 
 Feedback: <your feedback>
@@ -135,13 +135,14 @@ Score: <numeric score out of 10>
 };
 
 const parseAIResponse = (responseText) => {
-  const feedbackMatch = responseText.match(/Feedback:\s*(.*)/i);
-  const cheatingChance = responseText.match(/Cheating Probability:\s*(\d+)/i);
-  const scoreMatch = responseText.match(/Score:\s*(\d+)/i);
+  console.log('AI Response: ', responseText);
+  let feedbackMatch = responseText.match(/Feedback:\s*(.*)/i);
+  let cheatingChance = responseText.match(/Cheating Probability:\s*(.*)/i);
+  let scoreMatch = responseText.match(/Score:\s*(\d+)/i);
 
-  const feedback = feedbackMatch ? feedbackMatch[1].trim() : '';
-  const score = scoreMatch ? scoreMatch[1].trim() : '';
-  const cheating = cheatingChance ? cheatingChance[1].trim() : '';
+  let feedback = feedbackMatch ? feedbackMatch[1].trim() : '';
+  let score = scoreMatch ? scoreMatch[1].trim() : '';
+  let cheating = cheatingChance ? cheatingChance[1].trim() : '';
 
   return [feedback, cheating, score];
 };
