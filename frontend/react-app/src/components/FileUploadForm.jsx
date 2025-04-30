@@ -5,7 +5,7 @@ import { showToast } from './Toast';
 export default function FileUploadForm() {
   const [file, setFile] = useState(null);
   const [apiKey, setApiKey] = useState('sk-54e380418269488f8475a25ea6797c56');
-  const [aiAgent, setAiAgent] = useState('deepseek');
+  const [aiAgent, setAiAgent] = useState('perplexity');
   const [isUploading, setIsUploading] = useState(false);
 
   const baseUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3500';

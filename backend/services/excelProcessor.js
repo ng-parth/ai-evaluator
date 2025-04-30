@@ -71,7 +71,7 @@ export const processExcelFile = async (fileBuffer, aiAgent, apiKey) => {
           });
         }
       }
-      console.log('question: ', rowData);
+      // console.log('question: ', rowData);
 
       if (rowData.questions.length > 0) {
         rowsData.push(rowData);
@@ -90,6 +90,7 @@ export const processExcelFile = async (fileBuffer, aiAgent, apiKey) => {
       for (const q of rowData.questions) {
         const prompt = buildPrompt(q);
         try {
+          // console.log('Prompt: ', prompt);
           const aiResponse = await callAIModel(aiAgent, prompt, apiKey);
 
           // Assuming AI response format: Feedback\nScore
@@ -99,7 +100,7 @@ export const processExcelFile = async (fileBuffer, aiAgent, apiKey) => {
           row.getCell(columnLetterToNumber(q.scoreCol)).value = score || 'NO SCORE FOUND';
           successfulRowQuestionCount++;
         } catch (e) {
-          console.log('Fail to process: row: ', rowData.rowNumber, ' QuestionText: ', q.questionText, e);
+          console.log('Fail to process: row: ', rowData.rowNumber, ' QuestionText: ', q.questionText);
         }
       }
       if (successfulRowQuestionCount) {
@@ -120,23 +121,22 @@ export const processExcelFile = async (fileBuffer, aiAgent, apiKey) => {
 };
 
 const buildPrompt = ({questionText, answerText, modelAnswer, rubric} ) => {
-  return `You are an AI evaluator.
-            Question: ${questionText}
+  return `Question: ${questionText}
             Candidate's Response: ${answerText}
             Model Answer: ${modelAnswer}
             Rubric: ${rubric}
-          Evaluate the model answer based on the rubric. Provide detailed feedback, give cheating probaility and give a final score out of 10.
+          Evaluate the model answer based on the rubric. Provide concise feedback in 40-50 words, give cheating probaility and give a final score out of 10.
 Respond in the format:
 
 Feedback: <your feedback>
-Cheating: <cheating proability>
-Score: <numeric score>
+Cheating Probability: <high | Low>
+Score: <numeric score out of 10>
   `.trim();
 };
 
 const parseAIResponse = (responseText) => {
   const feedbackMatch = responseText.match(/Feedback:\s*(.*)/i);
-  const cheatingChance = responseText.match(/Cheating:\s*(\d+)/i);
+  const cheatingChance = responseText.match(/Cheating Probability:\s*(\d+)/i);
   const scoreMatch = responseText.match(/Score:\s*(\d+)/i);
 
   const feedback = feedbackMatch ? feedbackMatch[1].trim() : '';
@@ -162,15 +162,32 @@ const callAIModel = async (aiAgent, inputText, apiKey) => {
         temperature: 0.5,
       };
     } else if (aiAgent === 'perplexity') {
-      apiUrl = 'https://api.perplexity.ai/completion';
+      apiUrl = 'https://api.perplexity.ai/chat/completions';
       headers = {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       };
       body = {
-        model: 'mistral-7b-instruct',
-        messages: [{ role: 'user', content: inputText }],
+        "temperature":0.2,
+        "top_p":0.9,
+        "return_images":false,
+        "return_related_questions":false,
+        "top_k":0,
+        "stream":false,
+        "presence_penalty":0,
+        "frequency_penalty":1,
+        "web_search_options":{"search_context_size":"low"},
+        "model":"sonar",
+        "messages":[
+            {"role":"system","content":"You are an AI evaluator. Evaluate the following question based on the rubric parameters given in the question",},
+            {"role":"user", "content":inputText,}
+        ]
       };
+
+      // body = {
+      //   model: 'sonar',
+      //   messages: [{ role: 'user', content: inputText }],
+      // };
     } else if (aiAgent === 'deepseek') {
       apiUrl = 'https://api.deepseek.com/v1/chat/completions';
       headers = {
@@ -191,7 +208,7 @@ const callAIModel = async (aiAgent, inputText, apiKey) => {
     if (aiAgent === 'chatgpt' || aiAgent === 'deepseek') {
       aiOutputText = response.data.choices[0].message.content;
     } else if (aiAgent === 'perplexity') {
-      aiOutputText = response.data.choices[0].text;
+      aiOutputText = response.data.choices[0].message?.content || '';
     }
 
     return aiOutputText.trim();
@@ -201,3 +218,4 @@ const callAIModel = async (aiAgent, inputText, apiKey) => {
     throw error;
   }
 };
+
