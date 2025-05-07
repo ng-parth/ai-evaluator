@@ -78,13 +78,30 @@ export default function FileUploadForm() {
         </div>
 
         <div>
-          <label className="block mb-2 text-sm font-semibold text-gray-700">Upload Excel File (.xlsx only):</label>
-          <input
-              type="file"
-              accept=".xlsx"
-              onChange={handleFileChange}
-              className="w-full"
-          />
+          <label
+              htmlFor="file-upload"
+              className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-blue-300 rounded-xl cursor-pointer hover:border-blue-500 transition"
+          >
+            <svg
+                className="w-10 h-10 text-blue-400 mb-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                    d="M7 16V4m0 0L3 8m4-4l4 4M21 16v-1a4 4 0 00-3-3.87M17 16v1a4 4 0 01-4 4H5a4 4 0 01-4-4v-1a4 4 0 014-4h1">
+              </path>
+            </svg>
+            <p className="text-gray-600 mb-1">{file ? file.name : "Click to choose file"}</p>
+            <p className="text-sm text-gray-400">Only .xlsx files are allowed.<br/>(Drag-n-drop not allowed)</p>
+            <input
+                id="file-upload"
+                type="file"
+                accept=".xlsx"
+                onChange={handleFileChange}
+                className="hidden"
+            />
+          </label>
         </div>
 
         <button
