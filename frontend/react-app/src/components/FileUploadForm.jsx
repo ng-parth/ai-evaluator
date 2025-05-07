@@ -34,11 +34,10 @@ export default function FileUploadForm() {
       const response = await axios.post(`${baseUrl}/api/process-excel`, formData, {
         responseType: 'blob',
       });
-
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', 'processed_file.xlsx');
+      link.setAttribute('download', `processed_file_${new Date().getTime()}.xlsx`);
       document.body.appendChild(link);
       link.click();
       link.remove();
