@@ -1,36 +1,59 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { showToast } from './Toast';
+import * as XLSX from "xlsx";
+const ALL_SHEETS = "processAllSheet";
 
 export default function FileUploadForm() {
   const [file, setFile] = useState(null);
   const [apiKey, setApiKey] = useState('sk-54e380418269488f8475a25ea6797c56');
   const [aiAgent, setAiAgent] = useState('perplexity');
+  const [sheetNames, setSheetNames] = useState([]);
+  const [selectedSheet, setSelectedSheet] = useState(ALL_SHEETS);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
   const baseUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3500';
   // console.log('baseUrl: ', baseUrl);
 
   const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
+    const file = e.target.files[0];
+    setFile(file);
+
+    // Read sheet names
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const data = evt.target.result;
+      const workbook = XLSX.read(data, { type: "binary" });
+      setSheetNames(workbook.SheetNames);
+      setSelectedSheet(ALL_SHEETS); // Reset selection
+    };
+    reader.readAsBinaryString(file);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!file || !apiKey) {
-      showToast('Please upload a file and enter an API key.', 'error');
+      showToast('Please upload a file and/or enter an API key.', 'error');
       return;
     }
-
+    if (selectedSheet === ALL_SHEETS) {
+      setShowConfirmModal(true); // Show modal first
+    } else {
+      processFile(); // Process directly for single sheet
+    }
+  }
+  const processFile = async () => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('apiKey', apiKey);
     formData.append('aiAgent', aiAgent);
+    formData.append("sheetName", selectedSheet);
 
     try {
       setIsUploading(true);
-      // const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/process-excel`, formData, {
+      setShowConfirmModal(false);
       const response = await axios.post(`${baseUrl}/api/process-excel`, formData, {
         responseType: 'blob',
       });
@@ -52,6 +75,7 @@ export default function FileUploadForm() {
   };
 
   return (
+    <>
       <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
         <div>
           <label className="block mb-2 text-sm font-semibold text-gray-700">Choose AI Agent:</label>
@@ -103,7 +127,24 @@ export default function FileUploadForm() {
             />
           </label>
         </div>
-
+        {/* Sheet Dropdown */}
+        {sheetNames.length > 0 && (
+            <div>
+              <label className="block mb-2 text-sm font-semibold text-gray-700">Select sheet to process</label>
+              <select
+                  value={selectedSheet}
+                  onChange={(e) => setSelectedSheet(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              >
+                <option value={ALL_SHEETS}>All Sheets</option>
+                {sheetNames.map((name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                ))}
+              </select>
+            </div>
+        )}
         <button
             type="submit"
             disabled={isUploading}
@@ -112,5 +153,33 @@ export default function FileUploadForm() {
           {isUploading ? 'Processing...' : 'Upload and Process'}
         </button>
       </form>
+      {/* ⚠️ Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div
+              className="bg-white p-6 rounded-lg max-w-sm w-full space-y-4 transform transition-all duration-300 ease-out scale-95 opacity-0 animate-modalFade"
+          >
+            <h3 className="text-lg font-bold text-gray-800">Process All Sheets?</h3>
+            <p className="text-gray-600">
+              Processing all sheets may take more time and resources. Are you sure you want to continue?
+            </p>
+            <div className="flex justify-end space-x-2">
+              <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                  onClick={processFile}
+                  className="px-4 py-2 rounded bg-yellow-500 text-white hover:bg-yellow-600"
+              >
+                Yes, Proceed
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
