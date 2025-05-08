@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { showToast } from './Toast';
 import * as XLSX from "xlsx";
-const ALL_SHEETS = "processAllSheet";
+const ALL_SHEETS = "allSheets";
 
 export default function FileUploadForm() {
   const [file, setFile] = useState(null);
@@ -60,7 +60,7 @@ export default function FileUploadForm() {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `processed_file_${new Date().getTime()}.xlsx`);
+      link.setAttribute('download', `processed_${file?.name}_${sheetNames}.xlsx`);
       document.body.appendChild(link);
       link.click();
       link.remove();
