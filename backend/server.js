@@ -32,14 +32,14 @@ app.get('/api/ping', (req, res) => {
 
 app.post('/api/process-excel', async (req, res) => {
     try {
-        const { aiAgent, apiKey } = req.body;
-        console.log('Request to process:', aiAgent);
+        const { aiAgent, apiKey, sheetName } = req.body;
+        // console.log('Request to process:', aiAgent);
         if (!req.files || !req.files.file) {
             return res.status(400).send('No file uploaded.');
         }
 
         const file = req.files.file;
-        const processedBuffer = await processExcelFile(file.data, aiAgent, apiKey);
+        const processedBuffer = await processExcelFile({fileBuffer: file.data, aiAgent, apiKey, sheetName});
         let filename = `processed_file_${new Date().getTime()}`;
         res.setHeader('Content-Disposition', `attachment; filename=${filename}.xlsx`);
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

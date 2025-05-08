@@ -12,17 +12,20 @@ import {
 import {COLLECTIONS, getCollection, getDbClient} from "./mongoService.js";
 import {chunkArray, parseAIResponse, columnLetterToNumber} from "./utils.service.js";
 
-export const processExcelFile = async (fileBuffer, aiAgent, apiKey) => {
+export const processExcelFile = async ({fileBuffer, aiAgent, apiKey, sheetName}) => {
   try {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(fileBuffer);
     const worksheetPromises = [];
 
-    const worksheet = workbook.getWorksheet(1);
-    worksheetPromises.push(processWorksheets(worksheet));
-    // workbook.eachSheet(worksheet => {
-    //   worksheetPromises.push(processWorksheets(worksheet));
-    // });
+    if (sheetName !== 'allSheets') {
+      const worksheet = workbook.getWorksheet(sheetName);
+      if (worksheet) worksheetPromises.push(processWorksheets(worksheet));
+    } else {
+      workbook.eachSheet(worksheet => {
+        worksheetPromises.push(processWorksheets(worksheet));
+      });
+    }
     return Promise.allSettled(worksheetPromises).then(wsResp => {
       let totalEvaluatedRow = 0;
       wsResp.map(({ status, value}) => {
@@ -149,10 +152,8 @@ const getAiEvaluation = async row => {
     }
 
     const response = await axios.post(apiUrl, body, { headers });
-    // db['prompt-audit'].aggregate([{$group: {_id: null, averageTokens: {$avg: '$response.usage.total_tokens'}}}])
-    getDbClient() && await getCollection(COLLECTIONS.promptAudit).insertOne({ aiAgent, model, prompt, response: response.data, timestamp: new Date().toString() });
     let jsonResponse = parseAIResponse((response.data.choices[0].message?.content));
-    return { rowNumber, jsonResponse };
+    return { rowNumber, jsonResponse, auditRecord: { aiAgent, model, prompt, response: response.data, timestamp: new Date().toString()} };
   } catch (error) {
     console.error('Error calling AI Model:', error.message);
     return Promise.reject({ rowNumber, error: error.message });
@@ -161,9 +162,10 @@ const getAiEvaluation = async row => {
 
 async function runEvaluatorParallel(allQs) {
   const batches = chunkArray(allQs, CHUNK_BATCH_SIZE);
-  console.log(`Total batches: ${batches.length}`);
+  console.log(`Total batches: ${batches.length} of ${CHUNK_BATCH_SIZE} records.`);
   let allResults = [];
-
+  const auditRecords = [];
+  console.time(`====> Total Evals:`);
   // Process batches in chunks of MAX_PARALLEL
   for (let i = 0; i < batches.length; i++) {
     const batch = batches[i];
@@ -175,11 +177,25 @@ async function runEvaluatorParallel(allQs) {
         const {status, value, reason} = result;
         const isSuccess = status === "fulfilled";
         const rowNumber = value.rowNumber || reason.rowNumber;
+        if (isSuccess) auditRecords.push(value.auditRecord);
         allResults.push({isSuccess, response: value, error: reason, rowNumber });
       }
     });
     console.timeEnd(`====> Eval Batch: ${i}`);
   }
+  console.timeEnd(`====> Total Evals:`);
+  console.time(`Save Audit: ${auditRecords.length}`);
+  // Save All the audit records to db
+  if (auditRecords.length > 0 && getDbClient()) {
+    try {
+      const recs = await getCollection(COLLECTIONS.promptAudit).insertMany(auditRecords);
+      // db['prompt-audit'].aggregate([{$group: {_id: null, averageTokens: {$avg: '$response.usage.total_tokens'}}}])
+      console.log(`${recs.insertedCount} documents saved.\n`);
+    } catch (err) {
+      console.error(`Something went wrong trying to insert the new documents: ${err.message || err}\n`);
+    }
+  }
+  console.timeEnd(`Save Audit: ${auditRecords.length}`);
   return allResults;
 }
 
