@@ -253,7 +253,7 @@ async function processWorksheets (worksheet) {
     console.log('No valid questions for processing.', worksheet.name);
   }
   const evals = await runEvaluatorParallel(rowsData);
-  console.log('Finl Evals: ', evals);
+  console.log('Finl Evals: ', evals.length);
   for (const rowResult of evals) {
     const {isSuccess, response, reason, rowNumber} = rowResult;
     if (isSuccess && response?.jsonResponse) {

@@ -85,7 +85,7 @@ export const QUESTION_CONFIG = [
 
 export const ROW_CONFIG = {overallCommentCol: 'BD'};
 
-export const CHUNK_BATCH_SIZE = 3;
+export const CHUNK_BATCH_SIZE = 5;
 export const DEFAULT_AI_AGENT = 'perplexity';
 export const SAMPLE_RESPONSE = `\`\`\`json
 {
