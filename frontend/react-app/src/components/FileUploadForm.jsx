@@ -60,7 +60,7 @@ export default function FileUploadForm() {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      let fileName = `processed_${file?.name}_${selectedSheet}`.replace(/[\W_]+/g,"-");
+      let fileName = `processed_${file?.name}_${selectedSheet}`.replace(/[\W]+/g,"-");
       link.setAttribute('download', `${fileName}.xlsx`);
       document.body.appendChild(link);
       link.click();
