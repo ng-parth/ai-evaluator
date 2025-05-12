@@ -1,3 +1,5 @@
+import "./services/instrument.js";
+import * as Sentry from "@sentry/node"
 import express from 'express';
 import fileUpload from 'express-fileupload';
 import { MongoClient, ServerApiVersion } from 'mongodb';
@@ -20,6 +22,8 @@ const client = new MongoClient(MONGODB_URI, {
         deprecationErrors: true,
     }
 });
+if (Sentry?.Handlers?.requestHandler) app.use(Sentry.Handlers.requestHandler());
+// if (Sentry?.Handlers?.tracingHandler) app.use(Sentry.Handlers.tracingHandler());
 
 app.use(cors());
 app.use(fileUpload());
@@ -49,6 +53,16 @@ app.post('/api/process-excel', async (req, res) => {
         console.error('Error during processing:', error?.response || errMessage);
         res.status(500).send(errMessage);
     }
+});
+
+
+Sentry.setupExpressErrorHandler(app);
+// Optional fallthrough error handler
+app.use(function onError(err, req, res, next) {
+    // The error id is attached to `res.sentry` to be returned
+    // and optionally displayed to the user for support.
+    res.statusCode = 500;
+    res.end(res.sentry + "\n");
 });
 
 app.listen(PORT, () => {
